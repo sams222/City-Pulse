@@ -1,0 +1,207 @@
+Here's a comprehensive implementation outline for your NYC transit safety and community app in React Native.
+
+NYC CityPulse — Full Implementation Outline
+1. Project Foundation & Architecture
+Tech Stack:
+Frontend: React Native (Expo managed workflow for faster hackathon iteration)
+State Management: Zustand (lightweight, minimal boilerplate)
+Navigation: React Navigation v6 (bottom tabs + stack navigators)
+Backend: Firebase (Auth, Firestore, Cloud Functions, Storage) — fastest path for a hackathon
+Maps: react-native-maps with Google Maps provider
+API Calls: Axios + React Query (TanStack Query) for caching and refetching
+Project Structure:
+/src
+  /screens        → MapScreen, SafetyCompanion, CommunityPulse, Feed, Profile, QuestBoard
+  /components     → MapOverlay, SafetyScoreBadge, EventCard, ReportModal, QuestCard
+  /services       → api/, firebase/, google/, nycOpenData/
+  /hooks          → useLocation, useSafetyScore, useOverlayData, useQuests
+  /store          → zustand stores (auth, map, preferences, quests)
+  /utils          → scoring algorithms, date helpers, geocoding
+  /constants      → colors, theme, API keys, data source URLs
+
+
+2. User Account System
+Implementation: Firebase Authentication
+How to build it:
+Use @react-native-firebase/auth for email/password and Google OAuth sign-in
+On first login, create a Firestore document under /users/{uid} storing profile data, preferences, interests, saved routes, and quest/volunteer points
+Build a Preferences screen where users select interests (e.g., "music events," "food," "volunteer work," "art") — store these as an array in Firestore
+Saved daily commute routes go in a subcollection /users/{uid}/commutes
+Key packages:
+@react-native-firebase/auth
+@react-native-firebase/firestore
+
+3. Map Integration & Custom Theming
+Implementation: Google Maps Platform
+How to build it:
+Use react-native-maps with provider={PROVIDER_GOOGLE} and supply your Google Maps API key (enable Maps SDK for iOS/Android, Directions API, Places API, and Geocoding API in Google Cloud Console)
+Apply a custom map style JSON to override the default Google Maps look — use something like Snazzy Maps or Google's Cloud-based Map Styling to create a dark or branded color theme. Pass it via the customMapStyle prop on <MapView>
+For user-pinned saved places, store coordinates + label in Firestore under /users/{uid}/pins and render them as custom <Marker> components with a distinct icon
+Custom overlay toggling:
+Maintain a Zustand store with boolean flags: showSafety, showCommunity, showEvents, showBathrooms
+A floating toggle bar at the top of the map (pill-shaped segmented control) lets the user flip these on/off
+Each overlay is a separate layer of <Marker> and <Heatmap> components conditionally rendered based on the active toggles
+Startup shockwave pulse (advanced):
+When the map first loads at the user's location, trigger a <Circle> component that animates its radius from 0 to ~500m over 1.5 seconds using react-native-reanimated, then fades out. This is purely cosmetic but creates a nice "scanning" effect.
+
+4. Safety Companion Feature
+This is the core differentiator. It overlays safety data onto transit route options.
+4a. Fetching Transit Routes
+Implementation: Google Directions API (transit mode)
+When the user enters an origin and destination, hit the Directions API with mode=transit and alternatives=true to get multiple route options
+Parse each route's legs and steps — extract transit line names, stop sequences, departure/arrival times, and the polyline geometry
+Render each route option in a bottom sheet (like Google Maps does) using @gorhom/bottom-sheet
+4b. NYC Safety Data Ingestion
+This is where you pull from all the official sources. Build a backend data pipeline using Firebase Cloud Functions (scheduled) that fetches, normalizes, and stores this data in Firestore.
+Data sources and how to access them:
+Source
+Access Method
+Update Frequency
+NYPD Complaint Data (YTD)
+NYC Open Data API — Socrata SODA API. Endpoint: data.cityofnewyork.us/resource/qgea-i56i.json. Filter by transit-adjacent precincts or location coordinates
+Daily-ish
+NYPD CompStat 2.0
+Scrape or manually update weekly from the CompStat portal; some data lands on NYC Open Data
+Weekly (Wednesdays)
+NYPD Transit Crime Reports
+Monthly PDF/data from NYPD; some of this is on Open Data, otherwise parse the PDF via a Cloud Function
+Monthly
+MTA Service Alerts
+MTA's GTFS-RT and Service Status API — api.mta.info. Register for an API key at api.mta.info. Provides real-time alerts for delays, disruptions, and planned work
+Real-time
+Notify NYC
+No public API — use their RSS feed or scrape notify.nyc.gov. Alternatively, point users to install the Notify NYC app as a companion
+Real-time-ish
+NYC MOCJ
+Public safety trend reports — mostly PDFs and dashboards. Ingest manually or check if data appears on NYC Open Data
+Periodic
+NYC Open Data (general)
+Socrata SODA API for all datasets. Use $where clauses to filter by geo-coordinates (within X meters of a transit stop)
+Varies
+
+Normalization: Each incident record should be stored in Firestore under /incidents/{id} with a standardized schema: { type, lat, lng, timestamp, source, severity, description, geohash }. Use geohashing (via the ngeohash package) so you can efficiently query incidents near a route.
+4c. Safety Score Algorithm
+How to calculate it:
+For each transit route returned by the Directions API, do the following:
+Extract the route geometry — decode the polyline into lat/lng points
+Buffer the route — for each point along the route, query Firestore for incidents within a ~300m radius using geohash range queries
+Time-contextualize — weight incidents more heavily if they occurred at a similar time-of-day and day-of-week as the user's planned trip. An incident at 11pm on a Friday is more relevant if the user is traveling at 11pm on a Friday. Use a decay function: weight = 1 / (1 + daysSinceIncident * 0.1) multiplied by a time-match bonus
+Aggregate — sum weighted incident counts along the route, normalize by route length, and convert to a 0–100 safety score (higher = safer). You can use a formula like: score = 100 - min(100, normalizedIncidentDensity * scalingFactor)
+Display — show the score as a colored badge (green/yellow/red) next to each route option in the bottom sheet
+Daily commute awareness: If the user has a saved commute, run this scoring in a scheduled Cloud Function every morning and send a push notification via Firebase Cloud Messaging if the score drops below a threshold (e.g., "Your usual L train commute has a lower safety score today due to a reported incident at 14th St–Union Square").
+4d. User-Reported Incidents
+Implementation:
+A "Report Incident" floating action button on the map opens a modal
+User selects incident type (theft, harassment, suspicious activity, medical emergency, etc.), adds optional description and photo
+Submitted to Firestore under /incidents/{id} with source: "user" and verified: false
+Display user-reported incidents with a distinct marker style and a label like "Community Reported — Unverified"
+Verification process:
+After N independent reports of the same type within X meters and Y minutes, auto-flag as "Community Verified"
+Optionally, allow trusted/high-reputation users (based on quest/volunteer points) to verify reports
+Moderators can review flagged reports via a simple admin panel (Firebase console or a basic web dashboard)
+
+5. Community Pulse Feature
+5a. Structured/Official Events Data
+Data sources:
+Source
+Access Method
+NYC Parks Events
+NYC Open Data SODA API — search for "Parks Events Listing" dataset
+Farmers Markets
+NYC Open Data — "DOHMH Farmers Markets" dataset
+Street Fairs & Permitted Events
+NYC Open Data — "Special Events Permits"
+311 Compliments
+NYC Open Data — filter 311 Service Requests where complaint_type includes "Compliment"
+Citi Bike Station Activity
+Citi Bike GBFS feed (gbfs.citibikenyc.com/gbfs/gbfs.json) — high bike turnover at a station can proxy for neighborhood vitality
+
+Store these in Firestore under /events/{id} with schema: { title, description, lat, lng, startTime, endTime, source, category, isSponsored }.
+5b. User-Submitted Community Posts
+Users can post positive community happenings via a "Share Something Good" button
+Fields: title, description, photo (optional, uploaded to Firebase Storage), location (auto-detected or manually pinned), category (street art, free food, performance, block party, etc.)
+These appear as warm-colored pins on the Community Pulse map overlay
+Other users can upvote/heart these posts, which boosts their visibility radius and duration on the map
+
+6. Event Feed
+Implementation:
+A dedicated tab with a vertically scrolling feed mixing official NYC events, community posts, and safety alerts
+Use React Query to merge and sort data from multiple Firestore collections by timestamp
+Each card shows: event title, source badge (Official / Community / Safety), distance from user, time, and a thumbnail
+AI-powered personalization (Gemini integration):
+Use the Gemini API (generativelanguage.googleapis.com) to rank/filter feed items based on the user's stated interests and past engagement
+On each feed load, send the user's interest array and the list of candidate feed items (titles + categories) to Gemini with a prompt like: "Rank these events by relevance to a user interested in [interests]. Return a JSON array of event IDs in order."
+Alternatively, use Gemini to generate a brief daily digest: "Good morning! There's a free jazz concert in Prospect Park today, and your L train commute looks clear."
+Recommended API: Google Gemini API (the gemini-2.0-flash model is free-tier friendly and fast)
+
+7. Quest Feature
+Implementation:
+Firestore collection /quests/{id} with: { title, description, lat, lng, postedBy, claimedBy, status, reward, category, createdAt }
+A "Quest Board" screen shows nearby open quests sorted by distance
+Users post quests (help needed) by tapping a "Post Quest" button → fill in title, description, location, optional photo
+Other users browse quests on the map (shown as special quest-pin markers) or in a list, and tap "Accept Quest" to claim it
+Quest states: open → claimed → completed → verified
+After completion, the quest poster confirms and the helper earns points
+Points are stored in /users/{uid} and displayed on the user's profile
+
+8. Volunteer Event Tracking & Gamification
+Implementation:
+Volunteer events (from NYC Open Data or user-posted) are tagged with category: "volunteer"
+When a user RSVPs to a volunteer event, store it in /users/{uid}/rsvps
+Geofence check-in: Use expo-location's geofencing to detect when the user arrives at the event location. When they enter the geofence, auto-check them in and award points after a minimum dwell time (e.g., 30 minutes)
+Display a points leaderboard and badge system on the Profile screen: "Community Champion" (100+ points), "Neighborhood Hero" (500+ points), etc.
+
+9. Donations
+Implementation (hackathon-friendly):
+For the hackathon, show a "Donate" button on community event cards that opens a modal with the intent and a placeholder UI (amount selector, payment method mockup)
+If you want a functional prototype, use Stripe React Native SDK (@stripe/stripe-react-native) — create a payment intent via a Firebase Cloud Function, then present the Stripe payment sheet in-app
+Donations are logged in Firestore under /donations/{id} with { userId, eventId, amount, timestamp }
+
+10. Sponsored Events (Monetization)
+Implementation:
+Sponsored events are stored in /events/{id} with isSponsored: true and a sponsorName field
+On the map, sponsored events get a visually distinct marker (larger, branded border, subtle glow animation)
+In the feed, sponsored cards get a "Sponsored" badge and are periodically injected between organic content
+For the hackathon, pre-seed a few sponsored events in Firestore and show them on the map. No payment flow needed — just demonstrate the concept in your presentation
+
+11. Public Bathrooms Overlay
+Data source: NYC Open Data has a "Directory of Toilets in Public Parks" dataset, and there's a community-maintained dataset of public restrooms. Fetch via SODA API and render as a simple icon layer on the map.
+
+12. Key API & Package Summary
+Purpose
+API / Package
+Maps & Routing
+Google Maps Platform (Maps SDK, Directions, Places, Geocoding)
+Real-time transit
+MTA GTFS-RT API (api.mta.info)
+NYC public data
+NYC Open Data SODA API (data.cityofnewyork.us)
+Auth & Database
+Firebase (Auth, Firestore, Cloud Functions, Storage, FCM)
+AI Feed Personalization
+Google Gemini API
+Payments (if needed)
+Stripe React Native SDK
+Bike data
+Citi Bike GBFS feed
+Push Notifications
+Firebase Cloud Messaging + expo-notifications
+Location & Geofencing
+expo-location
+Maps component
+react-native-maps
+Bottom sheets
+@gorhom/bottom-sheet
+Animations
+react-native-reanimated
+
+
+13. Hackathon Prioritization
+Given limited time, here's a suggested build order:
+Phase 1 — Core (first few hours): Expo project setup, Firebase config, auth flow, Google Map with custom styling rendering on screen, user location
+Phase 2 — Safety MVP (next block): Fetch transit routes from Directions API, pull NYPD complaint data from NYC Open Data, implement a basic safety score, display scored routes in a bottom sheet
+Phase 3 — Community Pulse (next block): Ingest NYC Parks events and a couple other Open Data feeds, render community event pins on map, build the toggle overlay UI
+Phase 4 — Social features: User reporting (incidents + community posts), feed screen, quest board (even if just UI with seeded data)
+Phase 5 — Polish: Gemini feed personalization, shockwave animation, volunteer gamification, donation mockup, sponsored event pins
+This gets the most impactful features working first while leaving the nice-to-haves for if time allows. Want me to dive deeper into the code for any specific section?
+

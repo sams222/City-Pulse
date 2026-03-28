@@ -1,0 +1,11 @@
+{
+  "name": "city-pulse",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "seed:firestore": "node scripts/seed-firestore.mjs"
+  },
+  "devDependencies": {
+    "firebase-admin": "^13.0.0"
+  }
+}
