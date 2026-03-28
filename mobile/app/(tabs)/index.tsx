@@ -14,7 +14,11 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/components/useColorScheme';
+import { useOpenDataPositivePins } from '@/hooks/useOpenDataPositivePins';
 import { markerColor, useMapPinsState } from '@/hooks/useMapPinsState';
+import {
+  OPEN_DATA_POSITIVE_PIN_COLOR,
+} from '@/lib/fetchOpenDataPositivePins';
 import { isFirebaseConfigured } from '@/lib/firebase';
 import {
   androidHasGoogleMapsKey,
@@ -28,6 +32,7 @@ export default function MapScreen() {
   const tint = Colors[colorScheme].tint;
   const insets = useSafeAreaInsets();
   const { pins, loading, error, load } = useMapPinsState();
+  const { openDataPins } = useOpenDataPositivePins(isFirebaseConfigured());
   const mapRef = useRef<MapView>(null);
   const mapProvider =
     Platform.OS === 'android' && androidHasGoogleMapsKey() ? PROVIDER_GOOGLE : undefined;
@@ -103,6 +108,17 @@ export default function MapScreen() {
             </Text>
           </View>
         ))}
+        <Text style={[styles.message, { color: Colors[colorScheme].text, marginTop: 16 }]}>
+          Open data (parks, markets, 311 compliments, Citi Bike):
+        </Text>
+        {openDataPins.map((p) => (
+          <View key={`open-${p.id}`} style={styles.webRow}>
+            <View style={[styles.dot, { backgroundColor: OPEN_DATA_POSITIVE_PIN_COLOR }]} />
+            <Text style={{ color: Colors[colorScheme].text }} numberOfLines={2}>
+              <Text style={styles.bold}>{p.source}</Text> — {p.title}
+            </Text>
+          </View>
+        ))}
       </ScrollView>
     );
   }
@@ -119,6 +135,16 @@ export default function MapScreen() {
             pinColor={markerColor(p.kind)}
           />
         ))}
+        {openDataPins.map((p) => (
+          <Marker
+            key={`open-${p.id}`}
+            coordinate={{ latitude: p.latitude, longitude: p.longitude }}
+            title={p.title}
+            description={p.source + (p.description ? ` — ${p.description}` : '')}
+            tracksViewChanges={false}>
+            <View style={styles.openDataMarker} />
+          </Marker>
+        ))}
       </MapView>
       <View
         style={[
@@ -131,6 +157,7 @@ export default function MapScreen() {
         <Text style={[styles.legendItem, { color: markerColor('event') }]}>● Events</Text>
         <Text style={[styles.legendItem, { color: markerColor('community') }]}>● Community</Text>
         <Text style={[styles.legendItem, { color: markerColor('incident') }]}>● Safety</Text>
+        <Text style={[styles.legendItem, { color: OPEN_DATA_POSITIVE_PIN_COLOR }]}>● Open data</Text>
       </View>
     </View>
   );
@@ -151,13 +178,23 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 14,
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-around',
+    gap: 6,
     shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 4,
   },
-  legendItem: { fontSize: 12, fontWeight: '600' },
+  legendItem: { fontSize: 11, fontWeight: '600' },
+  openDataMarker: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: OPEN_DATA_POSITIVE_PIN_COLOR,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
   webBox: { padding: 20 },
   webTitle: { fontSize: 22, fontWeight: '700', marginBottom: 12 },
   webRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 6 },

@@ -22,8 +22,16 @@ Then press `a` (Android) or `i` (iOS simulator on macOS) or scan the QR code wit
 
 ```bash
 npm install
+```
+
+You need a **service account key** (Firebase Console → Project settings → Service accounts → Generate new private key). Point the seed script at the JSON file (do not commit it):
+
+```powershell
+$env:GOOGLE_APPLICATION_CREDENTIALS="C:\full\path\to\serviceAccount.json"
 npm run seed:firestore
 ```
+
+Or set `FIREBASE_SERVICE_ACCOUNT` to that path in `mobile/.env` (loaded automatically). The script uses `EXPO_PUBLIC_FIREBASE_PROJECT_ID` from `mobile/.env` for the project id.
 
 Ensure Firestore rules allow reads for the collections used by the app (`events`, `communityPosts`, `incidents`, `transitServiceAlerts`, …) for your demo.
 

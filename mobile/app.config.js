@@ -7,6 +7,11 @@ const googleMapsApiKey =
   process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY ||
   '';
 
+const nycOpenDataAppToken =
+  process.env.NYC_OPEN_DATA_APP_TOKEN ||
+  process.env.EXPO_PUBLIC_NYC_OPEN_DATA_APP_TOKEN ||
+  '';
+
 module.exports = {
   expo: {
     name: 'CityPulse',
@@ -79,6 +84,7 @@ module.exports = {
     extra: {
       router: {},
       googleMapsApiKey,
+      nycOpenDataAppToken,
     },
   },
 };

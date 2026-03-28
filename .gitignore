@@ -1,0 +1,4 @@
+# Firebase Admin / GCP keys (never commit)
+*-firebase-adminsdk-*.json
+serviceAccount*.json
+secrets/
