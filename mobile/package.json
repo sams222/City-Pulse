@@ -1,0 +1,31 @@
+{
+  "name": "mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
+  },
+  "dependencies": {
+    "expo": "55.0.10-canary-20260328-bdc6273",
+    "expo-blur": "55.0.11-canary-20260328-bdc6273",
+    "expo-linear-gradient": "55.0.10-canary-20260328-bdc6273",
+    "expo-status-bar": "55.0.5-canary-20260328-bdc6273",
+    "leaflet": "^1.9.4",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "react-native": "0.83.4",
+    "react-native-maps": "1.27.2",
+    "react-native-paper": "^5.15.0",
+    "react-native-safe-area-context": "^5.7.0",
+    "react-native-web": "~0.21.0"
+  },
+  "devDependencies": {
+    "@types/leaflet": "^1.9.21",
+    "@types/react": "~19.2.2",
+    "typescript": "~5.9.2"
+  },
+  "private": true
+}
