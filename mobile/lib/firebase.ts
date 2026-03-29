@@ -1,6 +1,10 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
+import { getAuth, initializeAuth, type Auth } from 'firebase/auth';
 import { getFirestore } from 'firebase/firestore';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+import { getReactNativePersistenceForAuth } from '@/lib/firebaseAuthPersistence';
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY ?? '',
@@ -16,6 +20,7 @@ export function isFirebaseConfigured(): boolean {
 }
 
 let app: FirebaseApp | undefined;
+let authInstance: Auth | undefined;
 
 export function getFirebaseApp(): FirebaseApp {
   if (!isFirebaseConfigured()) {
@@ -27,8 +32,25 @@ export function getFirebaseApp(): FirebaseApp {
   return app;
 }
 
-export function getFirebaseAuth() {
-  return getAuth(getFirebaseApp());
+export function getFirebaseAuth(): Auth {
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase is not configured. Add EXPO_PUBLIC_FIREBASE_* to mobile/.env');
+  }
+  const firebaseApp = getFirebaseApp();
+  if (!authInstance) {
+    if (Platform.OS === 'web') {
+      authInstance = getAuth(firebaseApp);
+    } else {
+      try {
+        authInstance = initializeAuth(firebaseApp, {
+          persistence: getReactNativePersistenceForAuth(AsyncStorage),
+        });
+      } catch {
+        authInstance = getAuth(firebaseApp);
+      }
+    }
+  }
+  return authInstance;
 }
 
 export function getDb() {

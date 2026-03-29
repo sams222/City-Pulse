@@ -1,63 +1,68 @@
 import React from 'react';
-import { Ionicons } from '@expo/vector-icons';
-import { Link, Tabs } from 'expo-router';
-import { Pressable } from 'react-native';
+import { Tabs, useSegments } from 'expo-router';
+import { View } from 'react-native';
+import { MD3DarkTheme, MD3LightTheme, PaperProvider } from 'react-native-paper';
 
-import Colors from '@/constants/Colors';
+import { CityPulseTabBar } from '@/components/navigation/CityPulseTabBar';
 import { useColorScheme } from '@/components/useColorScheme';
+import { CITY_PULSE_PRIMARY } from '@/constants/cityPulseNav';
+import { NeighborFavorStatusBar } from '@/components/NeighborFavorStatusBar';
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+
+const cityPulsePaperThemeDark = {
+  ...MD3DarkTheme,
+  colors: {
+    ...MD3DarkTheme.colors,
+    primary: CITY_PULSE_PRIMARY,
+    background: '#000000',
+    surface: '#141418',
+    surfaceVariant: '#1c1c22',
+  },
+};
+
+const cityPulsePaperThemeLight = {
+  ...MD3LightTheme,
+  colors: {
+    ...MD3LightTheme.colors,
+    primary: CITY_PULSE_PRIMARY,
+    background: '#ffffff',
+    surface: '#ffffff',
+    surfaceVariant: '#f4f4f5',
+    onSurface: '#000000',
+    onBackground: '#000000',
+  },
+};
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === 'dark';
+  const segments = useSegments();
+  const neighborFavorOnMapTab = (segments as string[]).includes('index');
 
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme].tint,
-        headerShown: useClientOnlyValue(false, true),
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Map',
-          tabBarIcon: ({ color }) => <Ionicons name="map" size={26} color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <Pressable style={{ marginRight: 15 }}>
-                {({ pressed }) => (
-                  <Ionicons
-                    name="information-circle-outline"
-                    size={26}
-                    color={Colors[colorScheme].text}
-                    style={{ opacity: pressed ? 0.5 : 1 }}
-                  />
-                )}
-              </Pressable>
-            </Link>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="feed"
-        options={{
-          title: 'Feed',
-          tabBarIcon: ({ color }) => <Ionicons name="newspaper-outline" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="safety"
-        options={{
-          title: 'Safety',
-          tabBarIcon: ({ color }) => <Ionicons name="shield-outline" size={24} color={color} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <Ionicons name="person-outline" size={24} color={color} />,
-        }}
-      />
-    </Tabs>
+    <PaperProvider theme={isDark ? cityPulsePaperThemeDark : cityPulsePaperThemeLight}>
+      <View style={{ flex: 1, backgroundColor: isDark ? '#000000' : '#ffffff' }}>
+        {neighborFavorOnMapTab ? <NeighborFavorStatusBar /> : null}
+        <View style={{ flex: 1 }}>
+          <Tabs
+            tabBar={(props) => <CityPulseTabBar {...props} />}
+            screenOptions={{
+              headerShown: useClientOnlyValue(false, true),
+              tabBarStyle: {
+                position: 'absolute',
+                backgroundColor: 'transparent',
+                borderTopWidth: 0,
+                elevation: 0,
+                height: 0,
+              },
+            }}>
+            <Tabs.Screen name="index" options={{ title: 'Map' }} />
+            <Tabs.Screen name="feed" options={{ title: 'Feed' }} />
+            <Tabs.Screen name="quests" options={{ title: 'Quests' }} />
+            <Tabs.Screen name="profile" options={{ title: 'Profile' }} />
+          </Tabs>
+        </View>
+      </View>
+    </PaperProvider>
   );
 }

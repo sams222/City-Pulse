@@ -1,0 +1,273 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Public read for hackathon demo content; tighten for production.
+    match /events/{id} {
+      allow read: if true;
+      // Authenticated users can add simple map events (see createUserMapEvent in the app).
+      allow create: if request.auth != null
+        && request.resource.data.hostUserId == request.auth.uid
+        && request.resource.data.source == 'user'
+        && request.resource.data.title is string
+        && request.resource.data.title.size() > 0
+        && request.resource.data.title.size() <= 200
+        && request.resource.data.lat is number
+        && request.resource.data.lat >= -90
+        && request.resource.data.lat <= 90
+        && request.resource.data.lng is number
+        && request.resource.data.lng >= -180
+        && request.resource.data.lng <= 180
+        && request.resource.data.startTime is timestamp
+        && (
+          !request.resource.data.keys().hasAny(['description'])
+          || (
+            request.resource.data.description is string
+            && request.resource.data.description.size() <= 4000
+          )
+        )
+        && (
+          !request.resource.data.keys().hasAny(['organizerEmail'])
+          || (
+            request.resource.data.organizerEmail is string
+            && request.resource.data.organizerEmail.size() <= 320
+          )
+        )
+        && (
+          !request.resource.data.keys().hasAny(['organizerPhone'])
+          || (
+            request.resource.data.organizerPhone is string
+            && request.resource.data.organizerPhone.size() <= 40
+          )
+        )
+        && (
+          !request.resource.data.keys().hasAny(['organizerName'])
+          || (
+            request.resource.data.organizerName is string
+            && request.resource.data.organizerName.size() <= 200
+          )
+        );
+
+      // Crowd-source / fix missing listing info: only these fields may change.
+      allow update: if request.auth != null
+        && request.resource.data.diff(resource.data).affectedKeys()
+          .hasOnly(['organizerName', 'organizerEmail', 'organizerPhone', 'startTime', 'endTime'])
+        && (
+          !request.resource.data.keys().hasAny(['organizerName'])
+          || (
+            request.resource.data.organizerName is string
+            && request.resource.data.organizerName.size() <= 200
+          )
+        )
+        && (
+          !request.resource.data.keys().hasAny(['organizerEmail'])
+          || (
+            request.resource.data.organizerEmail is string
+            && request.resource.data.organizerEmail.size() <= 320
+          )
+        )
+        && (
+          !request.resource.data.keys().hasAny(['organizerPhone'])
+          || (
+            request.resource.data.organizerPhone is string
+            && request.resource.data.organizerPhone.size() <= 40
+          )
+        )
+        && (
+          !request.resource.data.keys().hasAny(['startTime'])
+          || request.resource.data.startTime is timestamp
+        )
+        && (
+          !request.resource.data.keys().hasAny(['endTime'])
+          || request.resource.data.endTime is timestamp
+        );
+
+      allow delete: if false;
+
+      match /interested/{uid} {
+        allow read: if true;
+        allow create: if request.auth != null
+          && request.auth.uid == uid
+          && request.resource.data.keys().hasOnly(['createdAt'])
+          && request.resource.data.createdAt is timestamp;
+        allow delete: if request.auth != null && request.auth.uid == uid;
+        allow update: if false;
+      }
+    }
+    match /communityPosts/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /incidents/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /transitServiceAlerts/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /cityAlerts/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /cityNews/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /crimeSummaries/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /safetyTrendReports/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /citiBikeStations/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /dataSourceSync/{id} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /users/{userId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    match /users/{userId}/eventBookmarks/{eventId} {
+      allow read, delete: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null
+        && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['eventId', 'savedAt'])
+        && request.resource.data.eventId == eventId
+        && request.resource.data.savedAt is timestamp;
+      allow update: if false;
+    }
+
+    match /personalMarkers/{markerId} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    match /quests/{questId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.participantIds is list
+        && request.resource.data.participantIds.size() == 0
+        && request.resource.data.participantUsernames is list
+        && request.resource.data.participantUsernames.size() == 0
+        && request.resource.data.participantsRequired is int
+        && request.resource.data.participantsRequired >= 1
+        && request.resource.data.participantsRequired <= 100
+        && (
+          !request.resource.data.keys().hasAny(['pendingParticipantIds'])
+          || (
+            request.resource.data.pendingParticipantIds is list
+            && request.resource.data.pendingParticipantIds.size() == 0
+          )
+        )
+        && (
+          !request.resource.data.keys().hasAny(['pendingParticipantUsernames'])
+          || (
+            request.resource.data.pendingParticipantUsernames is list
+            && request.resource.data.pendingParticipantUsernames.size() == 0
+          )
+        )
+        && (
+          !request.resource.data.keys().hasAny(['requireHostApproval'])
+          || request.resource.data.requireHostApproval is bool
+        );
+      // Author: any update. Legacy single-accepter. Multi-participant: joiners may update participant lists if core fields unchanged.
+      allow update: if request.auth != null && (
+        resource.data.authorId == request.auth.uid ||
+        resource.data.acceptedByUserId == request.auth.uid ||
+        (
+          resource.data.status == 'open' &&
+          request.resource.data.status == 'in_progress' &&
+          request.resource.data.acceptedByUserId == request.auth.uid
+        ) ||
+        (
+          resource.data.status == 'open'
+          && request.resource.data.authorId == resource.data.authorId
+          && request.resource.data.title == resource.data.title
+          && request.resource.data.description == resource.data.description
+          && request.resource.data.lat == resource.data.lat
+          && request.resource.data.lng == resource.data.lng
+          && request.resource.data.authorUsername == resource.data.authorUsername
+          && request.resource.data.createdAt == resource.data.createdAt
+          && request.resource.data.participantIds is list
+          && request.resource.data.participantUsernames is list
+          && request.resource.data.participantIds.size() == request.resource.data.participantUsernames.size()
+          && request.resource.data.participantsRequired is int
+          && request.resource.data.participantsRequired >= 1
+          && request.resource.data.participantsRequired <= 100
+          && (request.resource.data.status == 'open' || request.resource.data.status == 'in_progress')
+        )
+      );
+      allow delete: if false;
+    }
+
+    match /userNotifications/{nid} {
+      allow read: if request.auth != null && resource.data.targetUserId == request.auth.uid;
+      allow create: if request.auth != null
+        && request.resource.data.fromUserId == request.auth.uid
+        && request.resource.data.targetUserId is string
+        && request.resource.data.questId is string
+        && request.resource.data.title is string
+        && request.resource.data.body is string
+        && request.resource.data.read == false
+        && request.resource.data.createdAt is timestamp
+        && exists(/databases/$(database)/documents/quests/$(request.resource.data.questId))
+        && get(/databases/$(database)/documents/quests/$(request.resource.data.questId)).data.authorId
+          == request.resource.data.targetUserId;
+      allow update: if request.auth != null
+        && resource.data.targetUserId == request.auth.uid
+        && request.resource.data.read == true;
+      allow delete: if false;
+    }
+
+    match /questDenials/{id} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    match /questHistory/{id} {
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+      // Batch-written by the quest author when marking NeighborFavor complete or failed.
+      allow create: if request.auth != null &&
+        exists(/databases/$(database)/documents/quests/$(request.resource.data.questId)) &&
+        get(/databases/$(database)/documents/quests/$(request.resource.data.questId)).data.authorId == request.auth.uid
+        && request.resource.data.userId is string
+        && request.resource.data.questId is string
+        && request.resource.data.questTitle is string
+        && request.resource.data.questTitle.size() > 0
+        && request.resource.data.questTitle.size() <= 200
+        && request.resource.data.questDescription is string
+        && request.resource.data.questDescription.size() <= 4000
+        && request.resource.data.authorUsername is string
+        && request.resource.data.authorUsername.size() <= 200
+        && request.resource.data.role is string
+        && request.resource.data.role in ['author', 'participant']
+        && request.resource.data.outcome is string
+        && request.resource.data.outcome in ['succeeded', 'failed']
+        && request.resource.data.completedAt is timestamp
+        && request.resource.data.keys().hasOnly(['userId', 'questId', 'questTitle', 'questDescription', 'authorUsername', 'role', 'outcome', 'completedAt']);
+      allow update, delete: if false;
+    }
+
+    match /eventSignups/{id} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null
+        && request.resource.data.userId == request.auth.uid
+        && request.resource.data.eventId is string
+        && request.resource.data.eventId.size() > 0
+        && request.resource.data.keys().hasOnly(['eventId', 'userId', 'createdAt']);
+      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
+      allow update: if false;
+    }
+  }
+}

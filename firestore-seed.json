@@ -9,9 +9,14 @@
       "crimeSummaries",
       "transitServiceAlerts",
       "cityAlerts",
+      "cityNews",
       "safetyTrendReports",
       "events",
       "citiBikeStations",
+      "personalMarkers",
+      "quests",
+      "questDenials",
+      "questHistory",
       "dataSourceSync"
     ]
   },
@@ -244,6 +249,45 @@
       "isSponsored": true,
       "sponsorName": "CityPulse Demo Sponsor",
       "externalId": "sponsored-mock-001"
+    },
+    "evt_music_brooklyn": {
+      "title": "Outdoor jazz — Brooklyn Bridge Park",
+      "description": "Local quintet near Pier 1; family friendly.",
+      "lat": 40.7024,
+      "lng": -73.9965,
+      "startTime": "2026-04-02T18:00:00.000Z",
+      "endTime": "2026-04-02T20:30:00.000Z",
+      "source": "seed",
+      "category": "music",
+      "isSponsored": false,
+      "sponsorName": null,
+      "externalId": "seed-music-001"
+    },
+    "evt_sports_central_park": {
+      "title": "Pickup volleyball — Central Park north meadow",
+      "description": "Casual games; bring water.",
+      "lat": 40.7965,
+      "lng": -73.9542,
+      "startTime": "2026-04-03T10:00:00.000Z",
+      "endTime": "2026-04-03T14:00:00.000Z",
+      "source": "seed",
+      "category": "sports",
+      "isSponsored": false,
+      "sponsorName": null,
+      "externalId": "seed-sports-001"
+    },
+    "evt_arts_chelsea": {
+      "title": "Gallery opening — Chelsea walk",
+      "description": "New photography exhibit; RSVP on gallery site.",
+      "lat": 40.7468,
+      "lng": -74.0055,
+      "startTime": "2026-04-04T19:00:00.000Z",
+      "endTime": "2026-04-04T21:00:00.000Z",
+      "source": "seed",
+      "category": "arts",
+      "isSponsored": false,
+      "sponsorName": null,
+      "externalId": "seed-arts-001"
     }
   },
   "citiBikeStations": {
@@ -258,6 +302,32 @@
       "lastReported": "2026-03-28T12:00:00.000Z",
       "vitalityScore": 0.62,
       "gbfsFeedUrl": "https://gbfs.citibikenyc.com/gbfs/gbfs.json"
+    }
+  },
+  "cityNews": {
+    "news_mta_budget_sample": {
+      "headline": "MTA outlines service investments for spring",
+      "summary": "Officials discussed weekend work and new elevator projects affecting several subway lines. Riders should check mta.info for live updates.",
+      "link": "https://www.mta.info/",
+      "source": "City summary",
+      "category": "transit",
+      "publishedAt": "2026-03-27T15:00:00.000Z"
+    },
+    "news_nyc_parks_sample": {
+      "headline": "NYC Parks announces spring program lineup",
+      "summary": "Community sports clinics and outdoor movie nights return to major parks; registration opens next week on nycgovparks.org.",
+      "link": "https://www.nycgovparks.org/",
+      "source": "City summary",
+      "category": "parks",
+      "publishedAt": "2026-03-26T12:00:00.000Z"
+    },
+    "news_health_advisory_sample": {
+      "headline": "DOHMH seasonal health reminders",
+      "summary": "Officials encourage staying hydrated during warm days and checking on vulnerable neighbors during heat events.",
+      "link": "https://www.nyc.gov/site/doh/index.page",
+      "source": "City summary",
+      "category": "health",
+      "publishedAt": "2026-03-25T09:30:00.000Z"
     }
   },
   "dataSourceSync": {

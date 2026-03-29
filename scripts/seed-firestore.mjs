@@ -1,15 +1,17 @@
+import { createRequire } from "node:module";
 import { existsSync, readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import dotenv from "dotenv";
 import admin from "firebase-admin";
+
+const require = createRequire(import.meta.url);
+const { mergeEnvIntoProcessEnv } = require("./merge-env.cjs");
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = join(__dirname, "..");
 const seedPath = join(root, "firestore-seed.json");
 
-dotenv.config({ path: join(root, ".env") });
-dotenv.config({ path: join(root, "mobile", ".env") });
+mergeEnvIntoProcessEnv(join(root, "mobile"));
 
 const projectId =
   process.env.FIREBASE_PROJECT_ID ||

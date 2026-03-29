@@ -1,0 +1,35 @@
+/** Google Maps JavaScript API styled map (dark NYC). Pass to `map.setOptions({ styles })`. */
+export const CITYPULSE_MAP_STYLES: object[] = [
+  { elementType: 'geometry', stylers: [{ color: '#1E2130' }] },
+  { elementType: 'labels.text.fill', stylers: [{ color: '#9AA0B8' }] },
+  { elementType: 'labels.text.stroke', stylers: [{ color: '#1E2130' }] },
+  { featureType: 'road.local', elementType: 'geometry', stylers: [{ color: '#272A3A' }] },
+  { featureType: 'road.arterial', elementType: 'geometry', stylers: [{ color: '#2C3044' }] },
+  { featureType: 'road.highway', elementType: 'geometry', stylers: [{ color: '#353A52' }] },
+  {
+    featureType: 'road.highway',
+    elementType: 'geometry.stroke',
+    stylers: [{ color: '#6C47FF' }, { weight: 0.8 }],
+  },
+  { featureType: 'road', elementType: 'labels.text.fill', stylers: [{ color: '#9AA0B8' }] },
+  { featureType: 'water', elementType: 'geometry', stylers: [{ color: '#162030' }] },
+  { featureType: 'water', elementType: 'labels.text.fill', stylers: [{ color: '#0EA5E9' }] },
+  { featureType: 'poi', elementType: 'geometry', stylers: [{ color: '#252838' }] },
+  { featureType: 'poi', elementType: 'labels.text.fill', stylers: [{ color: '#9AA0B8' }] },
+  { featureType: 'poi.park', elementType: 'geometry', stylers: [{ color: '#1A2A1E' }] },
+  { featureType: 'poi.park', elementType: 'labels.text.fill', stylers: [{ color: '#10B981' }] },
+  { featureType: 'transit', elementType: 'geometry', stylers: [{ color: '#2C3044' }] },
+  {
+    featureType: 'transit.station',
+    elementType: 'geometry',
+    stylers: [{ color: '#0EA5E9' }, { lightness: -60 }],
+  },
+  { featureType: 'transit.station', elementType: 'labels.text.fill', stylers: [{ color: '#0EA5E9' }] },
+  { featureType: 'transit.line', elementType: 'geometry', stylers: [{ color: '#0EA5E9' }, { weight: 1.5 }] },
+  {
+    featureType: 'administrative.neighborhood',
+    elementType: 'labels.text.fill',
+    stylers: [{ color: '#6C47FF' }],
+  },
+  { featureType: 'administrative', elementType: 'geometry.stroke', stylers: [{ color: '#2C3044' }] },
+];

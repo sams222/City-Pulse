@@ -50,3 +50,38 @@ Submit to stores: `npm run submit:android` / `npm run submit:ios` after you have
 **Expo SDK:** The app targets **SDK 54** (npm `expo@54.0.6`) so it loads in **Expo Go 54.x** (e.g. client **54.0.6**). Use Node **≥ 20.19.4** if tooling warns (recommended for RN 0.81 / Metro).
 
 **Google Play:** Android builds use **target and compile SDK 35** (Android 15), matching Play’s [target API policy](https://developer.android.com/google/play/requirements/target-sdk) for new submissions.
+
+## Web (Firebase Hosting)
+
+### Deploy your latest changes (web)
+
+1. Commit or save your work; ensure `mobile/.env` has the keys you need (Firebase, Google Maps, etc.).
+2. From the **repository root** (not only `mobile/`):
+
+```bash
+npm install
+npx firebase login
+npm run deploy:web
+```
+
+This runs `expo export -p web` into `mobile/dist`, then `firebase deploy --only hosting:city-pulse` (see `firebase.json` → **`site`: `city-pulse`**).
+
+3. If you changed **`firestore.rules`**, deploy rules separately:
+
+```bash
+npx firebase deploy --only firestore:rules
+```
+
+4. First-time or new machine: `npx firebase login` selects the Google account with access to the Firebase project in `.firebaserc`.
+
+### Static web assets (icons)
+
+Vector icon fonts used by `@expo/vector-icons` / React Native Paper are copied into **`mobile/public/fonts/`** (`Ionicons.ttf`, `MaterialCommunityIcons.ttf`) so the web build does not rely on a CDN. `mobile/app/+html.tsx` declares matching `@font-face` rules; `mobile/app/_layout.tsx` still preloads the same families via `expo-font`. The floating tab bar (`components/navigation/CityPulseTabBar.tsx`) renders **Material Community Icons** via `@expo/vector-icons/MaterialCommunityIcons` so the bottom nav uses the same bundled font as the rest of the app (not Paper’s indirect icon loader, which can pick a different package on web).
+
+In [Firebase Console](https://console.firebase.google.com/) → your project → **Hosting** → ensure a **site ID** named **`city-pulse`** exists (add another site if needed). Deploy targets that site; its URL is typically **`https://city-pulse.web.app`** when that site id is available.
+
+`.firebaserc` sets the Firebase **project** (e.g. `citypulse-46b49`); the **hosting site** name is configured separately in `firebase.json`.
+
+**Google Maps (web):** Google Cloud → Credentials → your Maps key → HTTP referrers → include `https://city-pulse.web.app/*` (and your project’s default `*.web.app` URL if you use it).
+
+**Firebase Auth:** Authentication → Settings → **Authorized domains** → add the same hostnames you use in production.

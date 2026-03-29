@@ -1,5 +1,8 @@
 const path = require('path');
+const { mergeEnvIntoProcessEnv } = require('../scripts/merge-env.cjs');
 const { getDefaultConfig } = require('expo/metro-config');
+
+mergeEnvIntoProcessEnv(__dirname);
 
 /** @type {import('expo/metro-config').MetroConfig} */
 const config = getDefaultConfig(__dirname);

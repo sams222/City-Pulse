@@ -1,0 +1,21 @@
+/** CityPulse brand palette (use alongside theme Colors). */
+export const Brand = {
+  electricViolet: '#6C47FF',
+  glacierBlue: '#0EA5E9',
+  metroTeal: '#00C9A7',
+  icyLavender: '#C7D2FE',
+  safe: '#00C44F',
+  caution: '#FFB800',
+  danger: '#FF3B30',
+  background: '#0D0D12',
+  surface: '#1C1C27',
+  surface2: '#252838',
+  textPrimary: '#F5F5FA',
+  textSecondary: '#8888A0',
+  textMuted: '#9AA0B8',
+  communityPulse: '#F472B6',
+  transit: '#0EA5E9',
+  quests: '#3B82F6',
+  points: '#10B981',
+  borderSubtle: '#2a2a3a',
+} as const;

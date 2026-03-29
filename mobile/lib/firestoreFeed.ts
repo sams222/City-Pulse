@@ -1,5 +1,7 @@
 import {
   collection,
+  doc,
+  getDoc,
   getDocs,
   limit,
   orderBy,
@@ -18,6 +20,8 @@ export type MapPin = {
   description?: string;
   latitude: number;
   longitude: number;
+  /** Set for incidents — used for route safety scoring. */
+  reportedAtMs?: number;
 };
 
 export type FeedItem = {
@@ -27,6 +31,7 @@ export type FeedItem = {
   subtitle?: string;
   sortTime: number;
   source?: string;
+  link?: string;
 };
 
 function toMillis(value: unknown): number {
@@ -105,10 +110,134 @@ export async function fetchMapPins(maxPerCollection = 40): Promise<MapPin[]> {
       description: typeof d.description === 'string' ? d.description : undefined,
       latitude: lat,
       longitude: lng,
+      reportedAtMs: toMillis(d.timestamp),
     });
   });
 
   return pins;
+}
+
+export type EventDetail = {
+  id: string;
+  title: string;
+  description?: string;
+  lat: number;
+  lng: number;
+  category?: string;
+  source?: string;
+  /** Article or listing URL for rich preview (images, longer text). */
+  link?: string;
+  imageUrl?: string;
+  hostUserId?: string;
+  /** Organizer contact (often on user-created events). */
+  organizerName?: string;
+  organizerEmail?: string;
+  organizerPhone?: string;
+  startTimeMs: number;
+  endTimeMs?: number;
+  /** Filled when loaded for UI (subcollection count). */
+  interestCount?: number;
+};
+
+export async function fetchEventById(id: string): Promise<EventDetail | null> {
+  const snap = await getDoc(doc(getDb(), 'events', id));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  const lat = typeof d.lat === 'number' ? d.lat : Number(d.lat);
+  const lng = typeof d.lng === 'number' ? d.lng : Number(d.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+
+  let interestCount = 0;
+  try {
+    const { getEventInterestCount } = await import('@/lib/eventEngagement');
+    interestCount = await getEventInterestCount(id);
+  } catch {
+    /* ignore */
+  }
+
+  return {
+    id: snap.id,
+    title: pickTitle(d, 'Event'),
+    description: typeof d.description === 'string' ? d.description : undefined,
+    lat,
+    lng,
+    category: typeof d.category === 'string' ? d.category : undefined,
+    source: typeof d.source === 'string' ? d.source : undefined,
+    imageUrl: typeof d.imageUrl === 'string' ? d.imageUrl : undefined,
+    hostUserId: typeof d.hostUserId === 'string' ? d.hostUserId : undefined,
+    organizerName: typeof d.organizerName === 'string' ? d.organizerName : undefined,
+    organizerEmail: typeof d.organizerEmail === 'string' ? d.organizerEmail : undefined,
+    organizerPhone: typeof d.organizerPhone === 'string' ? d.organizerPhone : undefined,
+    link: typeof d.link === 'string' ? d.link : typeof d.url === 'string' ? d.url : undefined,
+    startTimeMs: toMillis(d.startTime ?? d.endTime),
+    endTimeMs: d.endTime ? toMillis(d.endTime) : undefined,
+    interestCount,
+  };
+}
+
+export type CommunityPostDetail = {
+  id: string;
+  title: string;
+  description?: string;
+  lat: number;
+  lng: number;
+  placeName?: string;
+  authorDisplayName?: string;
+  imageUrl?: string;
+  link?: string;
+};
+
+export async function fetchCommunityPostById(id: string): Promise<CommunityPostDetail | null> {
+  const snap = await getDoc(doc(getDb(), 'communityPosts', id));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  const lat = typeof d.lat === 'number' ? d.lat : Number(d.lat);
+  const lng = typeof d.lng === 'number' ? d.lng : Number(d.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return {
+    id: snap.id,
+    title: pickTitle(d, 'Community'),
+    description: typeof d.description === 'string' ? d.description : undefined,
+    lat,
+    lng,
+    placeName: typeof d.placeName === 'string' ? d.placeName : undefined,
+    authorDisplayName: typeof d.authorDisplayName === 'string' ? d.authorDisplayName : undefined,
+    imageUrl: typeof d.imageUrl === 'string' ? d.imageUrl : undefined,
+    link: typeof d.link === 'string' ? d.link : typeof d.url === 'string' ? d.url : undefined,
+  };
+}
+
+export type IncidentDetail = {
+  id: string;
+  type: string;
+  source?: string;
+  /** Primary article or data source URL for rich preview. */
+  sourceUrl?: string;
+  timestamp: number;
+  description?: string;
+  photoUrl?: string;
+};
+
+export async function fetchIncidentById(id: string): Promise<IncidentDetail | null> {
+  const snap = await getDoc(doc(getDb(), 'incidents', id));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  return {
+    id: snap.id,
+    type: typeof d.type === 'string' ? d.type : 'Incident',
+    source: typeof d.source === 'string' ? d.source : undefined,
+    sourceUrl:
+      typeof d.sourceUrl === 'string'
+        ? d.sourceUrl
+        : typeof d.link === 'string'
+          ? d.link
+          : typeof d.url === 'string'
+            ? d.url
+            : undefined,
+    timestamp: toMillis(d.timestamp),
+    description: typeof d.description === 'string' ? d.description : undefined,
+    photoUrl: typeof d.photoUrl === 'string' ? d.photoUrl : undefined,
+  };
 }
 
 export async function fetchFeedItems(maxEach = 25): Promise<FeedItem[]> {
@@ -127,6 +256,7 @@ export async function fetchFeedItems(maxEach = 25): Promise<FeedItem[]> {
       subtitle: typeof d.source === 'string' ? d.source : undefined,
       sortTime: toMillis(d.startTime ?? d.endTime),
       source: typeof d.source === 'string' ? d.source : 'event',
+      link: typeof d.link === 'string' ? d.link : typeof d.url === 'string' ? d.url : undefined,
     });
   });
 
@@ -147,6 +277,7 @@ export async function fetchFeedItems(maxEach = 25): Promise<FeedItem[]> {
             : undefined,
       sortTime: toMillis(d.createdAt),
       source: 'communityPosts',
+      link: typeof d.link === 'string' ? d.link : typeof d.url === 'string' ? d.url : undefined,
     });
   });
 
@@ -177,8 +308,13 @@ export type IncidentRow = {
   id: string;
   type: string;
   source?: string;
+  sourceUrl?: string;
   timestamp: number;
   description?: string;
+  photoUrl?: string;
+  /** Present when the incident document has coordinates (map + security zoom). */
+  lat?: number;
+  lng?: number;
 };
 
 export async function fetchIncidents(max = 40): Promise<IncidentRow[]> {
@@ -188,13 +324,55 @@ export async function fetchIncidents(max = 40): Promise<IncidentRow[]> {
   const rows: IncidentRow[] = [];
   snap.forEach((docSnap) => {
     const d = docSnap.data();
+    const latRaw = typeof d.lat === 'number' ? d.lat : Number(d.lat);
+    const lngRaw = typeof d.lng === 'number' ? d.lng : Number(d.lng);
+    const lat = Number.isFinite(latRaw) ? latRaw : undefined;
+    const lng = Number.isFinite(lngRaw) ? lngRaw : undefined;
     rows.push({
       id: docSnap.id,
       type: typeof d.type === 'string' ? d.type : 'Incident',
       source: typeof d.source === 'string' ? d.source : undefined,
+      sourceUrl:
+        typeof d.sourceUrl === 'string'
+          ? d.sourceUrl
+          : typeof d.link === 'string'
+            ? d.link
+            : typeof d.url === 'string'
+              ? d.url
+              : undefined,
       timestamp: toMillis(d.timestamp),
       description: typeof d.description === 'string' ? d.description : undefined,
+      photoUrl: typeof d.photoUrl === 'string' ? d.photoUrl : undefined,
+      ...(lat != null && lng != null ? { lat, lng } : {}),
     });
   });
   return rows;
+}
+
+const NYC_CENTER = { lat: 40.7128, lng: -74.006 };
+
+/** Lat/lng from an incident document, or null if missing. */
+export async function fetchIncidentLatLngById(id: string): Promise<{ lat: number; lng: number } | null> {
+  const snap = await getDoc(doc(getDb(), 'incidents', id));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  const lat = typeof d.lat === 'number' ? d.lat : Number(d.lat);
+  const lng = typeof d.lng === 'number' ? d.lng : Number(d.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+}
+
+/** Lat/lng from a transit service alert document, or null if missing. */
+export async function fetchTransitAlertLatLngById(id: string): Promise<{ lat: number; lng: number } | null> {
+  const snap = await getDoc(doc(getDb(), 'transitServiceAlerts', id));
+  if (!snap.exists()) return null;
+  const d = snap.data();
+  const lat = typeof d.lat === 'number' ? d.lat : Number(d.lat);
+  const lng = typeof d.lng === 'number' ? d.lng : Number(d.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng };
+}
+
+export function getNycMapFallback(): { lat: number; lng: number } {
+  return { ...NYC_CENTER };
 }

@@ -17,8 +17,8 @@ export function useMapPinsState() {
     setLoading(true);
     setError(null);
     try {
-      const data = await fetchMapPins(35);
-      setPins(data);
+      const data = await fetchMapPins(60);
+      setPins(data.filter((p) => p.kind === 'event' || p.kind === 'incident'));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Could not load map data. Check Firestore rules.');
     } finally {
@@ -37,8 +37,6 @@ export function markerColor(kind: MapPin['kind']) {
   switch (kind) {
     case 'event':
       return '#22c55e';
-    case 'community':
-      return '#f97316';
     case 'incident':
       return '#ef4444';
     default:

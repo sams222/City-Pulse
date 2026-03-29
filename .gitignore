@@ -1,4 +1,10 @@
+# Local env (use repo root `.env` and/or `mobile/.env`)
+.env
+.env.local
+.env.*.local
+
 # Firebase Admin / GCP keys (never commit)
 *-firebase-adminsdk-*.json
 serviceAccount*.json
 secrets/
+node_modules
