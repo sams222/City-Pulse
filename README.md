@@ -1,6 +1,6 @@
 # City-Pulse
 
-Your one stop shop for everything NYC.
+HackMHC++ second place overall winner! Your one stop shop for everything NYC.
 
 ## Mobile app (Expo)
 
