@@ -1,8 +1,95 @@
-# City-Pulse
+# City Pulse
 
-HackMHC++ second place overall winner! Your one stop shop for everything NYC.
+**Your one-stop shop for everything NYC** — events, public safety incidents, transit
+routing, and neighbor-to-neighbor favors, all on one live map.
 
-## Mobile app (Expo)
+🏆 **2nd place overall — HackMHC++** · [Live demo](https://city-pulse.web.app) · [Devpost](https://devpost.com/software/citypulse-dnapf8)
+
+<p align="center">
+  <img src="docs/screenshots/map-transit.jpg" width="240" alt="Transit routing with walking and bus steps" />
+  <img src="docs/screenshots/feed.jpg" width="240" alt="City news feed" />
+  <img src="docs/screenshots/quests.jpg" width="240" alt="City Quests with XP and streaks" />
+</p>
+
+## What it does
+
+New Yorkers juggle half a dozen apps to get around the city. City Pulse folds them
+into a single map, where every pin is colour-coded by what it is:
+
+| Pin | Meaning |
+|---|---|
+| 🟢 Green | **Events** — sports, music, arts, food, community, outdoors. Tap for details plus a Gemini-generated summary. |
+| 🔴 Red | **Safety incidents** — crime, traffic accidents, and fires near you. |
+| 🔵 Blue | **Public bathrooms** — because you never know. |
+| 🟡 Yellow | **NeighborFavors** — user-posted quests. Post a task and the number of people you need; the pin clears once enough neighbors accept. |
+
+On top of the map:
+
+- **Transit routing with a safety score.** Pick any destination and City Pulse returns
+  public-transit routes, each rated for safety and annotated with the incidents that
+  occurred along it.
+- **Recommended events feed.** Browse events we think you'll like instead of hunting
+  across the map.
+- **City news feed.** Quick summaries of what's happening across the five boroughs.
+- **Quests and XP.** Daily challenges, streaks, and city cred for contributing.
+
+## Why we built it
+
+We started with a narrower idea: a tool to help transit riders plan a *safer* commute —
+enter a destination, get routes ranked by safety, and see recent incidents along each one.
+
+As we built it, we realized the interesting part wasn't the safety score; it was that we'd
+assembled a live picture of the city. So we widened the scope from a safety tool into a
+community one — and that reframing changed how people reacted to it.
+
+## How it works
+
+```
+NYC Open Data (SODA API) ─┐
+NYPD Complaint Data (YTD) ─┤
+Special Events Permits    ─┼──► Firestore ──► Expo / React Native app
+User-submitted pins       ─┘                      │
+                                                  ├── Google Maps  (map + directions)
+                                                  └── Gemini API   (event summaries, feed enrichment)
+```
+
+**Data sources.** Safety incidents come from NYPD Complaint Data (YTD) via the NYC Open
+Data SODA API; events come from the NYC Special Events Permits dataset (street fairs and
+permitted public gatherings), supplemented by user-submitted events and incident reports.
+
+**App structure.** Expo Router drives four tabs — Map, Feed, Quests, Profile — behind a
+Firebase Auth flow with a preferences step. Firestore holds `events`, `communityPosts`,
+`incidents`, and `transitServiceAlerts`. The same codebase ships to Android, iOS, and web.
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| App | Expo (SDK 54) + React Native, Expo Router, React Native Paper |
+| Language | TypeScript |
+| Auth & database | Firebase Auth + Firestore |
+| Maps & routing | Google Maps SDK + Directions API (Apple MapKit on iOS) |
+| AI | Google Gemini (event summaries, feed enrichment) |
+| Open data | NYC Open Data SODA API |
+| Web hosting | Firebase Hosting |
+
+## Engineering challenges
+
+**Keeping one UI consistent across mobile and web.** React Native Web doesn't render
+everything the way native does — blur, fonts, and map layers all diverged. We ended up
+bundling the vector icon fonts ourselves (`mobile/public/fonts/`) with matching
+`@font-face` rules in `app/+html.tsx`, rather than relying on a CDN or Paper's indirect
+icon loader, which resolved to a different package on web.
+
+**Pin clutter.** With every dataset switched on, the map became unreadable — thousands of
+pins across five boroughs. We fixed it by centering and zooming the map on the user's
+current location so only nearby pins render.
+
+**Deciding what *not* to build.** With four people and a weekend, the features we cut
+helped as much as the ones we shipped. Knowing when to stop adding turned out to be the
+real skill.
+
+## Running locally
 
 App code lives in `mobile/`.
 
@@ -85,3 +172,8 @@ In [Firebase Console](https://console.firebase.google.com/) → your project →
 **Google Maps (web):** Google Cloud → Credentials → your Maps key → HTTP referrers → include `https://city-pulse.web.app/*` (and your project’s default `*.web.app` URL if you use it).
 
 **Firebase Auth:** Authentication → Settings → **Authorized domains** → add the same hostnames you use in production.
+
+## Team
+
+Built at HackMHC++ by [Sam Strugger](https://github.com/sams222), Abdullah Zidan,
+Atai Kydyrov, and Gianella Palacio.
